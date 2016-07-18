@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>DATA URI</title>
+</head>
+<body>
+    <h1>指定した画像をDATA URIに変換する</h1>
+    <input type="file" name="file-photo" id="file-photo">
+    <div>
+        <textarea id="result" cols="100" rows="5"></textarea>
+    </div>
+</body>
+<script>
+function convDataURI(evt) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('result').innerText = e.target.result;
+    }
+    reader.readAsDataURL(evt.target.files[0]);
+}
+document.getElementById('file-photo').addEventListener('change', convDataURI, false);
+</script>
+</html>

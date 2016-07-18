@@ -1,0 +1,42 @@
+{
+  "name": "photo-resize-js",
+  "version": "0.0.1",
+  "description": "photo resize library.",
+  "main": "gulpfile.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "babel-jest": "^13.2.2",
+    "babel-polyfill": "^6.9.1",
+    "babel-preset-es2015": "^6.9.0",
+    "babelify": "^7.3.0",
+    "browser-sync": "^2.13.0",
+    "browserify": "^13.0.1",
+    "gulp": "^3.9.1",
+    "gulp-load-plugins": "^1.2.4",
+    "gulp-util": "^3.0.7",
+    "jest-cli": "^13.2.3",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.7.0"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/am1tanaka/photo-resize-js.git"
+  },
+  "keywords": [
+    "javascript",
+    "resize",
+    "image"
+  ],
+  "author": "YuTanaka",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/am1tanaka/photo-resize-js/issues"
+  },
+  "homepage": "https://github.com/am1tanaka/photo-resize-js#readme"
+}
