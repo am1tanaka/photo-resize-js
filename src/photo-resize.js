@@ -11,10 +11,10 @@ export default class PhotoResize {
      * @param function callback 読み込みが完了したら呼び出すコールバック関数。引数として、読み込んだデータのDataURIを返す
     */
     load(file, callback) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
             callback(e.target.result);
-        }
+        };
         reader.readAsDataURL(file);
     }
 }
