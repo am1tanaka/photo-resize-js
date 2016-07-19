@@ -12,9 +12,8 @@
     </div>
     <div id="exif-result"></div>
 </body>
-<!--
-<script src="./scripts/app.js"></script>
--->
+<script src="../src/plugins/piexif.js"></script>
+<script src="../testdatas/testdata_var.js"></script>
 <script>
 function convDataURI(evt) {
     var reader = new FileReader();
@@ -26,9 +25,18 @@ function convDataURI(evt) {
 document.getElementById('file-photo').addEventListener('change', convDataURI, false);
 
 // exifテスト
-/*
-var exif = _piexif.load(TEST_DATA);
-document.getElementById('exif-result').innerText = exif ? 'ok' : 'ng';
-*/
+var exifObj = piexif.load(TEST_DATA);
+var output = "";
+for (var ifd in exifObj) {
+    if (ifd == "thumbnail") {
+        continue;
+    }
+    output += "-" + ifd + "<br>";
+    for (var tag in exifObj[ifd]) {
+        output += "  " + piexif.TAGS[ifd][tag]["name"] + ":" + exifObj[ifd][tag]+"<br>";
+    }
+}
+document.getElementById('exif-result').innerHTML = output;
+
 </script>
 </html>
