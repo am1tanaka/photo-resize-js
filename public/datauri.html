@@ -10,7 +10,11 @@
     <div>
         <textarea id="result" cols="100" rows="5"></textarea>
     </div>
+    <div id="exif-result"></div>
 </body>
+<!--
+<script src="./scripts/app.js"></script>
+-->
 <script>
 function convDataURI(evt) {
     var reader = new FileReader();
@@ -20,5 +24,11 @@ function convDataURI(evt) {
     reader.readAsDataURL(evt.target.files[0]);
 }
 document.getElementById('file-photo').addEventListener('change', convDataURI, false);
+
+// exifテスト
+/*
+var exif = _piexif.load(TEST_DATA);
+document.getElementById('exif-result').innerText = exif ? 'ok' : 'ng';
+*/
 </script>
 </html>
