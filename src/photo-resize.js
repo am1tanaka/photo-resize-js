@@ -6,7 +6,6 @@
  */
 
 import piexif from './plugins/piexif';
-//var piexif = require('./plugins/piexif');
 
 export default class PhotoResize {
     /** 指定のファイルを読み込む
@@ -120,7 +119,7 @@ export default class PhotoResize {
         }
 
         // 処理する
-        return this.image_resize(photo, scale_w_pixel, scale_h_pixel);
+        return this.image_resize(photo, scale_w_pixel, scale_h_pixel, callback);
     }
 
     /**
@@ -137,16 +136,10 @@ export default class PhotoResize {
         var image = new Image();
         image.crossOrigin = "Anonymous";
         image.onload = function(event) {
-            console.log("image="+this);
-            console.log("onload ctx="+ctx);
             canvas.width = dstWidth;
-            console.log("onload2");
             canvas.height = dstHeight;
-            console.log("onload3:"+dstWidth+","+dstHeight);
-            console.log("size="+this.width+","+this.height);
             ctx.drawImage(this, 0, 0, this.width, this.height, 0, 0, dstWidth, dstHeight);
-            console.log("call callback.");
-            callback(canvas.toDataURL());
+            callback(canvas.toDataURL('image/jpeg'));
         }
         image.src = photo;
     }

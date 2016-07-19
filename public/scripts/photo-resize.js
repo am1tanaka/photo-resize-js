@@ -5,22 +5,34 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * 写真を指定サイズに縮小、あるいは拡大して、DataURIで返すクラス
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * 利用先で import PhotoResize from '../src/photo-resize' などで読み込む
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * @copyright 2016 YuTanaka@AmuseOne
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * @license MIT
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      */
+var _createClass = function () {
+    function defineProperties(target, props) {
+        for (var i = 0; i < props.length; i++) {
+            var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+        }
+    }return function (Constructor, protoProps, staticProps) {
+        if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+    };
+}(); /**
+      * 写真を指定サイズに縮小、あるいは拡大して、DataURIで返すクラス
+      * 利用先で import PhotoResize from '../src/photo-resize' などで読み込む
+      * @copyright 2016 YuTanaka@AmuseOne
+      * @license MIT
+      */
 
 var _piexif = require('./plugins/piexif');
 
 var _piexif2 = _interopRequireDefault(_piexif);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : { default: obj };
+}
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-//var piexif = require('./plugins/piexif');
+function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+        throw new TypeError("Cannot call a class as a function");
+    }
+}
 
 var PhotoResize = function () {
     function PhotoResize() {
@@ -30,14 +42,183 @@ var PhotoResize = function () {
     _createClass(PhotoResize, [{
         key: 'loadExif',
 
-
         /**
          * @param string data DataURLの文字列
          * 渡されたデータから、EXIFデータを取り出す
          */
         value: function loadExif(data) {
-            console.log(data);
-            return _piexif2.default.dump;
+            this.exifObj = _piexif2.default.load(data);
+            return this.exifObj;
+        }
+
+        /**
+         * 画像のサイズを返す。画像が90度回転している時は、それに対応して縦横を入れ替えた状態で返す。
+         * ImageWidth/ImageHeightが有効ならそちらを。無効ならExifImageWidthとExifImageHeightを返す。
+         * @param ExifObject exifObj 省略した場合、読み込み済みのものを使う
+         * @return [0]=幅 / [1]=高さ。読み込めなかった時は、falseを返す
+         */
+
+    }, {
+        key: 'getImageSize',
+        value: function getImageSize(exifObj) {
+            var ret = [0, 0];
+            exifObj = exifObj || this.exifObj;
+            if (exifObj['0th']['ImageWidth'] && exifObj['0th']['ImageLength']) {
+                ret[0] = exifObj['0th']['ImageWidth'];
+                ret[1] = exifObj['0th']['ImageLength'];
+            } else if (exifObj['Exif'][_piexif2.default.ExifIFD.PixelXDimension] && exifObj['Exif'][_piexif2.default.ExifIFD.PixelYDimension]) {
+                ret[0] = exifObj['Exif'][_piexif2.default.ExifIFD.PixelXDimension];
+                ret[1] = exifObj['Exif'][_piexif2.default.ExifIFD.PixelYDimension];
+            } else {
+                // 幅も高さも無効だったので何もしない
+                return false;
+            }
+            // 反転チェック
+            if (this.isSwapSide()) {
+                var temp = ret[0];
+                ret[0] = ret[1];
+                ret[1] = temp;
+            }
+            return ret;
+        }
+
+        /**
+         * 指定の画像の縦横サイズを入れ替える必要があるかを返す
+         * @param ExifObject exifObj 省略した場合は、読み込み済みのものを利用
+         * @return true=入れ替える必要あり / false=入れ替える必要なし
+         */
+
+    }, {
+        key: 'isSwapSide',
+        value: function isSwapSide(exifObj) {
+            var ori = this.getOrientation(exifObj);
+            return ori >= 5;
+        }
+
+        /**
+         * 幅と高さで指定した矩形におさまる最大サイズに縮小、あるいは拡大する。
+         * isUpをtrueにすると、現在のサイズが小さかった場合、拡大する。
+         * ここではリサイズのみで、Exifはいじらない
+         * @param string photo 変換する元の画像(DataURL)
+         * @param int width 指定の幅
+         * @param int height 指定の高さ
+         * @param function callback(data) 変換後のデータを返すコールバック
+         * @param bool isUp 現在のサイズが指定の矩形より小さい時、拡大する時true。falseや省略の場合は処理しない
+         * @return string 変換後のDataURL。Exifがないなどの場合、false
+         */
+
+    }, {
+        key: 'resize',
+        value: function resize(photo, width, height, callback, isUp) {
+            isUp = isUp || false;
+            var scale_w = 1;
+            var scale_h = 1;
+            var scale = 1;
+            var scale_w_pixel = width;
+            var scale_h_pixel = height;
+
+            // データを読み込む
+            this.loadExif(photo);
+
+            // 現在の画像サイズを取得
+            var image_size = this.getImageSize();
+            if (!image_size) {
+                return false;
+            }
+
+            // 拡大率を算出
+            scale_w = width / image_size[0];
+            scale_h = height / image_size[1];
+
+            // 小さい方を拡大、縮小率として採用する
+            if (scale_w <= scale_h) {
+                scale = scale_w;
+                scale_w_pixel = width;
+                scale_h_pixel = height * scale;
+            } else {
+                scale = scale_h;
+                scale_w_pixel = width * scale;
+                scale_h_pixel = height;
+            }
+
+            // 拡大の場合で、isUpがfalseであれば何もしない
+            if (!isUp && scale >= 1) {
+                return photo;
+            }
+
+            // 処理する
+            return this.image_resize(photo, scale_w_pixel, scale_h_pixel, callback);
+        }
+
+        /**
+         * 指定のDataURL画像を、指定のスケールで拡大・縮小して返す
+         * 参考URL: http://qiita.com/geek_duck/items/2db28daa9e27df9b861d
+         * @param string photo サイズを変更する画像のDataURL
+         * @param number scale 拡大率
+         * @param function callback(result) 処理後にデータを渡すコールバック関数
+         * @return string 変換後の画像のDataURL
+         */
+
+    }, {
+        key: 'image_resize',
+        value: function image_resize(photo, dstWidth, dstHeight, callback) {
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            var image = new Image();
+            image.crossOrigin = "Anonymous";
+            image.onload = function (event) {
+                canvas.width = dstWidth;
+                canvas.height = dstHeight;
+                ctx.drawImage(this, 0, 0, this.width, this.height, 0, 0, dstWidth, dstHeight);
+                callback(canvas.toDataURL('image/jpeg'));
+            };
+            image.src = photo;
+        }
+
+        /**
+         * 画像の回転を返す
+         * 1=そのまま
+         * 2=上下反転
+         * 3=180度回転
+         * 4=左右反転
+         * 5=上下反転、時計回りに270度回転
+         * 6=時計回りに90度回転
+         * 7=上下反転、時計回りに90度回転
+         * 8=時計回りに270度回転
+         *
+         * @param ExifObj exifObj 省略したら、読み込み済みのExifObjを利用
+         * @return 取得したorientationの値を返す。データがない場合は1(そのまま)を返す
+         */
+
+    }, {
+        key: 'getOrientation',
+        value: function getOrientation(exifObj) {
+            exifObj = exifObj || this.exifObj;
+            return exifObj['0th']['Orientation'] || 1;
+        }
+
+        /**
+         * 渡されたexifObjの中身を列挙したHTML文字列を返す
+         * @param ExifObj exifObj
+         * @return string 文字列
+         */
+
+    }, {
+        key: 'exifHTML',
+        value: function exifHTML(exifObj) {
+            exifObj = exifObj || this.exifObj;
+            var output = "";
+            for (var ifd in exifObj) {
+                if (ifd == "thumbnail") {
+                    continue;
+                }
+                output += "-" + ifd + "<br>";
+                for (var tag in exifObj[ifd]) {
+                    output += "  " + _piexif2.default.TAGS[ifd][tag]["name"] + ":" + exifObj[ifd][tag] + "<br>";
+                }
+            }
+
+            return output;
         }
     }], [{
         key: '_load',

@@ -4,7 +4,7 @@
   "description": "photo resize library.",
   "main": "gulpfile.js",
   "directories": {
-    "test": "tests"
+    "test": "__tests__"
   },
   "dependencies": {},
   "devDependencies": {
@@ -21,8 +21,10 @@
     "gulp": "^3.9.1",
     "gulp-load-plugins": "^1.2.4",
     "gulp-util": "^3.0.7",
+    "jasmine": "^2.4.1",
     "jest-cli": "^13.2.3",
     "karma": "^1.1.1",
+    "karma-browserify": "^5.1.0",
     "karma-chrome-launcher": "^1.0.1",
     "karma-firefox-launcher": "^1.0.0",
     "karma-jasmine": "^1.0.2",
@@ -30,7 +32,7 @@
     "watchify": "^3.7.0"
   },
   "scripts": {
-    "test": "jest"
+    "test": "karma start"
   },
   "repository": {
     "type": "git",
