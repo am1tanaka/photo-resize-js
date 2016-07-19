@@ -32,18 +32,19 @@ describe('exif test', function() {
 
 describe('resize test.', () => {
     var resizeddata = "";
+    const photoResize = new PhotoResize();
     beforeEach((done) => {
         var callback = (data) => {
             resizeddata = data;
             done();
         }
-        const photoResize = new PhotoResize();
         photoResize.resize(TEST_DATA, 200, 200, callback, false);
     });
 
     it('resize test.', () => {
         expect(resizeddata.length).toBeLessThan(TEST_DATA.length);
         console.log(resizeddata.length+"<"+TEST_DATA.length);
+        var size = photoResize.getImageSize();
+        console.log(size);
     });
-
 });
