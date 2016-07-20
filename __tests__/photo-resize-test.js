@@ -33,9 +33,6 @@ describe('exif test', function() {
 describe('resize test.', () => {
     var resizeddata = "";
     const photoResize = new PhotoResize();
-    var originalTimeout;
-    originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
     beforeEach((done) => {
         var callback = (data) => {
             resizeddata = data;
@@ -48,8 +45,46 @@ describe('resize test.', () => {
         expect(resizeddata.length).toBeLessThan(TEST_DATA.length);
         console.log(resizeddata.length+"<"+TEST_DATA.length);
     });
+});
 
-    afterEach(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
+describe('resize test2.', () => {
+    var resizeddata = "";
+    const photoResize = new PhotoResize();
+    beforeEach((done) => {
+        var callback = (data) => {
+            resizeddata = data;
+            done();
+        }
+        photoResize.resize(TEST_DATA, 2000, 2000, callback, false);
     });
+
+    it('cancel sizeup.', () => {
+        expect(resizeddata.length).toBe(TEST_DATA.length);
+        console.log(resizeddata.length+"="+TEST_DATA.length);
+    });
+});
+
+describe('resize test3.', () => {
+    var resizeddata = "";
+    const photoResize = new PhotoResize();
+    beforeEach((done) => {
+        var callback = (data) => {
+            resizeddata = data;
+            done();
+        }
+        photoResize.resize(TEST_DATA, 600, 600, callback, true);
+    });
+
+    it('sizeup test.', () => {
+        expect(resizeddata.length).toBeGreaterThan(TEST_DATA.length);
+        console.log(resizeddata.length+">"+TEST_DATA.length);
+    });
+});
+
+describe('exif test.', () => {
+
+});
+
+describe('rotation test.', () => {
+
 });
