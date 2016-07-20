@@ -166,28 +166,6 @@ export default class PhotoResize {
     }
 
     /**
-     * 指定のDataURL画像を、指定のスケールで拡大・縮小して返す
-     * 参考URL: http://qiita.com/geek_duck/items/2db28daa9e27df9b861d
-     * @param string photo サイズを変更する画像のDataURL
-     * @param number scale 拡大率
-     * @param function callback(result) 処理後にデータを渡すコールバック関数
-     * @return string 変換後の画像のDataURL
-     */
-    image_resize(photo, dstWidth, dstHeight, callback) {
-        var canvas = document.createElement('canvas');
-        var ctx = canvas.getContext('2d');
-        var image = new Image();
-        image.crossOrigin = "Anonymous";
-        image.onload = function(event) {
-            canvas.width = dstWidth;
-            canvas.height = dstHeight;
-            ctx.drawImage(this, 0, 0, this.width, this.height, 0, 0, dstWidth, dstHeight);
-            callback(canvas.toDataURL('image/jpeg'));
-        }
-        image.src = photo;
-    }
-
-    /**
      * 画像の回転を返す
      * 1=そのまま
      * 2=上下反転
