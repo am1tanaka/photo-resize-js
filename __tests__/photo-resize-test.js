@@ -33,6 +33,9 @@ describe('exif test', function() {
 describe('resize test.', () => {
     var resizeddata = "";
     const photoResize = new PhotoResize();
+    var originalTimeout;
+    originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
     beforeEach((done) => {
         var callback = (data) => {
             resizeddata = data;
@@ -44,7 +47,9 @@ describe('resize test.', () => {
     it('resize test.', () => {
         expect(resizeddata.length).toBeLessThan(TEST_DATA.length);
         console.log(resizeddata.length+"<"+TEST_DATA.length);
-        var size = photoResize.getImageSize();
-        console.log(size);
+    });
+
+    afterEach(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
     });
 });

@@ -6,8 +6,15 @@
  */
 
 import piexif from './plugins/piexif';
+import {Resize} from './plugins/resize';
 
 export default class PhotoResize {
+
+    constructor() {
+        // Workerを利用するかのフラグ。現時点では動いていないのでfalseにしておく
+        this.USER_WORKER = false;
+    }
+
     /** 指定のファイルを読み込む
      * @param File file 読み込むファイル。fileタグなどで指定されたもの
      * @param function callback 読み込みが完了したら呼び出すコールバック関数。引数として、読み込んだデータのDataURIを返す
@@ -70,6 +77,15 @@ export default class PhotoResize {
     }
 
     /**
+     * JSImageResizerによる拡大、縮小
+     * @param string photo
+     */
+    JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
+        var resize = new Resize(origw, origh, dstw, dsth, true, true, this.USE_WORKER, callback);
+        resize.resize(photo);
+    }
+
+    /**
      * 幅と高さで指定した矩形におさまる最大サイズに縮小、あるいは拡大する。
      * isUpをtrueにすると、現在のサイズが小さかった場合、拡大する。
      * ここではリサイズのみで、Exifはいじらない
@@ -81,45 +97,72 @@ export default class PhotoResize {
      * @return string 変換後のDataURL。Exifがないなどの場合、false
      */
     resize(photo, width, height, callback, isUp) {
+        var that = this;
         isUp = isUp || false;
-        var scale_w = 1;
-        var scale_h = 1;
-        var scale = 1;
-        var scale_w_pixel = width;
-        var scale_h_pixel = height;
-
-        // データを読み込む
-        this.loadExif(photo);
-
-        // 現在の画像サイズを取得
-        const image_size = this.getImageSize();
-        if (!image_size) {
-            return false;
-        }
-
-        // 拡大率を算出
-        scale_w = width/image_size[0];
-        scale_h = height/image_size[1];
-
-        // 小さい方を拡大、縮小率として採用する
-        if (scale_w <= scale_h) {
-            scale = scale_w;
-            scale_w_pixel = width;
-            scale_h_pixel = height*scale;
-        }
-        else {
-            scale = scale_h;
-            scale_w_pixel = width*scale;
-            scale_h_pixel = height;
-        }
-
-        // 拡大の場合で、isUpがfalseであれば何もしない
-        if (!isUp && (scale>=1)) {
-            return photo;
-        }
 
         // 処理する
-        return this.image_resize(photo, scale_w_pixel, scale_h_pixel, callback);
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        var image = new Image();
+        image.crossOrigin = "Anonymous";
+        image.onload = function(event) {
+            var scale_w = 1;
+            var scale_h = 1;
+            var scale = 1;
+            var scale_w_pixel = width;
+            var scale_h_pixel = height;
+
+            // 拡大率を算出
+            scale_w = width/this.width;
+            scale_h = height/this.height;
+
+            // 小さい方を拡大、縮小率として採用する
+            if (scale_w <= scale_h) {
+                scale = scale_w;
+                scale_w_pixel = width;
+                scale_h_pixel = this.height*scale;
+            }
+            else {
+                scale = scale_h;
+                scale_w_pixel = this.width*scale;
+                scale_h_pixel = height;
+            }
+
+            // 拡大の場合で、isUpがfalseであれば何もしない
+            if (!isUp && (scale>=1)) {
+                callback(photo);
+                return;
+            }
+
+            canvas.width = this.width;
+            canvas.height = this.height;
+            ctx.drawImage(this, 0, 0);
+            that.JSImageResizer(
+                ctx.getImageData(0, 0, this.width, this.height).data,
+                this.width, this.height,
+                scale_w_pixel, scale_h_pixel,
+                (buffer) => {
+                    var tempcanvas = document.createElement('canvas');
+                    tempcanvas.width = scale_w_pixel;
+                    tempcanvas.height = scale_h_pixel;
+                    var tempcontext = tempcanvas.getContext('2d');
+                    that.updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
+                    callback(tempcanvas.toDataURL('image/jpeg'));
+                });
+        }
+        image.src = photo;
+    }
+
+    /** 縮小、拡大した画像を指定のコンテキストに描画。
+     * resizeから利用。
+     */
+    updateCanvas(contextHandlePassed, imageBuffer, frameBuffer) {
+        var data = imageBuffer.data;
+        var length = data.length;
+        for (var x = 0; x < length; ++x) {
+            data[x] = frameBuffer[x] & 0xFF;
+        }
+        contextHandlePassed.putImageData(imageBuffer, 0, 0);
     }
 
     /**

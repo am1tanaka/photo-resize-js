@@ -1,15 +1,21 @@
 //JavaScript Image Resizer (c) 2012 - Grant Galitz
-var scripts = document.getElementsByTagName("script");
-var sourceOfWorker = scripts[scripts.length-1].src;
-export function Resize(widthOriginal, heightOriginal, targetWidth, targetHeight, blendAlpha, interpolationPass, useWebWorker, resizeCallback) {
-	this.widthOriginal = Math.abs(parseInt(widthOriginal) || 0);
-	this.heightOriginal = Math.abs(parseInt(heightOriginal) || 0);
-	this.targetWidth = Math.abs(parseInt(targetWidth) || 0);
-	this.targetHeight = Math.abs(parseInt(targetHeight) || 0);
-	this.colorChannels = (!!blendAlpha) ? 4 : 3;
+var resizeWorker = null;
+self.onmessage = function (event) {
+	switch (event.data[0]) {
+		case "setup":
+			resizeWorker = new Resize(event.data[1], event.data[2], event.data[3], event.data[4], event.data[5], event.data[6]);
+			break;
+		case "resize":
+			resizeWorker.resize(event.data[1]);
+	}
+}
+function Resize(widthOriginal, heightOriginal, targetWidth, targetHeight, colorChannels, interpolationPass) {
+	this.widthOriginal = widthOriginal;
+	this.heightOriginal = heightOriginal;
+	this.targetWidth = targetWidth;
+	this.targetHeight = targetHeight;
+	this.colorChannels = colorChannels;
 	this.interpolationPass = !!interpolationPass;
-	this.useWebWorker = !!useWebWorker;
-	this.resizeCallback = (typeof resizeCallback == "function") ? resizeCallback : function (returnedArray) {};
 	this.targetWidthMultipliedByChannels = this.targetWidth * this.colorChannels;
 	this.originalWidthMultipliedByChannels = this.widthOriginal * this.colorChannels;
 	this.originalHeightMultipliedByChannels = this.heightOriginal * this.colorChannels;
@@ -20,32 +26,10 @@ export function Resize(widthOriginal, heightOriginal, targetWidth, targetHeight,
 Resize.prototype.initialize = function () {
 	//Perform some checks:
 	if (this.widthOriginal > 0 && this.heightOriginal > 0 && this.targetWidth > 0 && this.targetHeight > 0) {
-		if (this.useWebWorker) {
-			this.useWebWorker = (this.widthOriginal != this.targetWidth || this.heightOriginal != this.targetHeight);
-			if (this.useWebWorker) {
-				this.configureWorker();
-			}
-		}
-		if (!this.useWebWorker) {
-			this.configurePasses();
-		}
+		this.configurePasses();
 	}
 	else {
 		throw(new Error("Invalid settings specified for the resizer."));
-	}
-}
-Resize.prototype.configureWorker = function () {
-	try {
-		var parentObj = this;
-		this.worker = new Worker(sourceOfWorker.substring(0, sourceOfWorker.length - 3) + "Worker.js");
-		this.worker.onmessage = function (event) {
-			parentObj.heightBuffer = event.data;
-			parentObj.resizeCallback(parentObj.heightBuffer);
-		}
-		this.worker.postMessage(["setup", this.widthOriginal, this.heightOriginal, this.targetWidth, this.targetHeight, this.colorChannels, this.interpolationPass]);
-	}
-	catch (error) {
-		this.useWebWorker = false;
 	}
 }
 Resize.prototype.configurePasses = function () {
@@ -69,7 +53,7 @@ Resize.prototype.configurePasses = function () {
 		//Bypass the height resizer pass:
 		this.resizeHeight = this.bypassResizer;
 	}
-	else {
+	else {	
 		//Setup the height resizer pass:
 		this.ratioWeightHeightPass = this.heightOriginal / this.targetHeight;
 		if (this.ratioWeightHeightPass < 1 && this.interpolationPass) {
@@ -405,12 +389,7 @@ Resize.prototype.resizeHeightRGBA = function (buffer) {
 	return outputBuffer;
 }
 Resize.prototype.resize = function (buffer) {
-	if (this.useWebWorker) {
-		this.worker.postMessage(["resize", buffer]);
-	}
-	else {
-		this.resizeCallback(this.resizeHeight(this.resizeWidth(buffer)));
-	}
+	self.postMessage(this.resizeHeight(this.resizeWidth(buffer)));
 }
 Resize.prototype.bypassResizer = function (buffer) {
 	//Just return the buffer passsed:
