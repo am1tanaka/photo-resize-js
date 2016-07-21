@@ -5,48 +5,46 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = function () {
-    function defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-        }
-    }return function (Constructor, protoProps, staticProps) {
-        if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-    };
-}(); /**
-      * 写真を指定サイズに縮小、あるいは拡大して、DataURIで返すクラス
-      * 利用先で import PhotoResize from '../src/photo-resize' などで読み込む
-      * @copyright 2016 YuTanaka@AmuseOne
-      * @license MIT
-      */
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * 写真を指定サイズに縮小、あるいは拡大して、DataURIで返すクラス
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * 利用先で import PhotoResize from '../src/photo-resize' などで読み込む
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * @copyright 2016 YuTanaka@AmuseOne
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * @license MIT
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      */
 
 var _piexif = require('./plugins/piexif');
 
 var _piexif2 = _interopRequireDefault(_piexif);
 
-function _interopRequireDefault(obj) {
-    return obj && obj.__esModule ? obj : { default: obj };
-}
+var _resize = require('./plugins/resize');
 
-function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-        throw new TypeError("Cannot call a class as a function");
-    }
-}
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var PhotoResize = function () {
     function PhotoResize() {
         _classCallCheck(this, PhotoResize);
+
+        // Workerを利用するかのフラグ。現時点では動いていないのでfalseにしておく
+        this.USER_WORKER = false;
     }
 
+    /** 指定のファイルを読み込む
+     * @param File file 読み込むファイル。fileタグなどで指定されたもの
+     * @param function callback 読み込みが完了したら呼び出すコールバック関数。引数として、読み込んだデータのDataURIを返す
+    */
+
+
     _createClass(PhotoResize, [{
-        key: 'loadExif',
+        key: '_loadExif',
+
 
         /**
          * @param string data DataURLの文字列
          * 渡されたデータから、EXIFデータを取り出す
          */
-        value: function loadExif(data) {
+        value: function _loadExif(data) {
             this.exifObj = _piexif2.default.load(data);
             return this.exifObj;
         }
@@ -63,18 +61,21 @@ var PhotoResize = function () {
         value: function getImageSize(exifObj) {
             var ret = [0, 0];
             exifObj = exifObj || this.exifObj;
-            if (exifObj['0th']['ImageWidth'] && exifObj['0th']['ImageLength']) {
-                ret[0] = exifObj['0th']['ImageWidth'];
-                ret[1] = exifObj['0th']['ImageLength'];
-            } else if (exifObj['Exif'][_piexif2.default.ExifIFD.PixelXDimension] && exifObj['Exif'][_piexif2.default.ExifIFD.PixelYDimension]) {
-                ret[0] = exifObj['Exif'][_piexif2.default.ExifIFD.PixelXDimension];
-                ret[1] = exifObj['Exif'][_piexif2.default.ExifIFD.PixelYDimension];
-            } else {
-                // 幅も高さも無効だったので何もしない
-                return false;
+
+            try {
+                ret[0] = exifObj['0th'][_piexif2.default.ImageIFD.ImageWidth];
+                ret[1] = exifObj['0th'][_piexif2.default.ImageIFD.ImageLength];
+            } catch (e) {
+                try {
+                    ret[0] = exifObj['Exif'][_piexif2.default.ExifIFD.PixelXDimension];
+                    ret[1] = exifObj['Exif'][_piexif2.default.ExifIFD.PixelYDimension];
+                } catch (ee) {
+                    return false;
+                }
             }
+
             // 反転チェック
-            if (this.isSwapSide()) {
+            if (this.isSwapSide(exifObj)) {
                 var temp = ret[0];
                 ret[0] = ret[1];
                 ret[1] = temp;
@@ -96,6 +97,18 @@ var PhotoResize = function () {
         }
 
         /**
+         * JSImageResizerによる拡大、縮小
+         * @param string photo
+         */
+
+    }, {
+        key: '_JSImageResizer',
+        value: function _JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
+            var resize = new _resize.Resize(origw, origh, dstw, dsth, true, true, this.USE_WORKER, callback);
+            resize.resize(photo);
+        }
+
+        /**
          * 幅と高さで指定した矩形におさまる最大サイズに縮小、あるいは拡大する。
          * isUpをtrueにすると、現在のサイズが小さかった場合、拡大する。
          * ここではリサイズのみで、Exifはいじらない
@@ -110,69 +123,103 @@ var PhotoResize = function () {
     }, {
         key: 'resize',
         value: function resize(photo, width, height, callback, isUp) {
+            var that = this;
+            var temp;
+            this._loadExif(photo);
+
+            // フラグ設定
             isUp = isUp || false;
-            var scale_w = 1;
-            var scale_h = 1;
-            var scale = 1;
-            var scale_w_pixel = width;
-            var scale_h_pixel = height;
 
-            // データを読み込む
-            this.loadExif(photo);
-
-            // 現在の画像サイズを取得
-            var image_size = this.getImageSize();
-            if (!image_size) {
-                return false;
-            }
-
-            // 拡大率を算出
-            scale_w = width / image_size[0];
-            scale_h = height / image_size[1];
-
-            // 小さい方を拡大、縮小率として採用する
-            if (scale_w <= scale_h) {
-                scale = scale_w;
-                scale_w_pixel = width;
-                scale_h_pixel = height * scale;
-            } else {
-                scale = scale_h;
-                scale_w_pixel = width * scale;
-                scale_h_pixel = height;
-            }
-
-            // 拡大の場合で、isUpがfalseであれば何もしない
-            if (!isUp && scale >= 1) {
-                return photo;
+            // 画像の縦横が異なる時、拡大、縮小先のx,yを入れ替える
+            if (this.isSwapSide()) {
+                temp = width;
+                width = height;
+                height = temp;
             }
 
             // 処理する
-            return this.image_resize(photo, scale_w_pixel, scale_h_pixel, callback);
-        }
-
-        /**
-         * 指定のDataURL画像を、指定のスケールで拡大・縮小して返す
-         * 参考URL: http://qiita.com/geek_duck/items/2db28daa9e27df9b861d
-         * @param string photo サイズを変更する画像のDataURL
-         * @param number scale 拡大率
-         * @param function callback(result) 処理後にデータを渡すコールバック関数
-         * @return string 変換後の画像のDataURL
-         */
-
-    }, {
-        key: 'image_resize',
-        value: function image_resize(photo, dstWidth, dstHeight, callback) {
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d');
             var image = new Image();
             image.crossOrigin = "Anonymous";
             image.onload = function (event) {
-                canvas.width = dstWidth;
-                canvas.height = dstHeight;
-                ctx.drawImage(this, 0, 0, this.width, this.height, 0, 0, dstWidth, dstHeight);
-                callback(canvas.toDataURL('image/jpeg'));
+                var scale_w = 1;
+                var scale_h = 1;
+                var scale = 1;
+                var scale_w_pixel = width;
+                var scale_h_pixel = height;
+
+                // 拡大率を算出
+                scale_w = width / this.width;
+                scale_h = height / this.height;
+
+                // 小さい方を拡大、縮小率として採用する
+                if (scale_w <= scale_h) {
+                    scale = scale_w;
+                    scale_w_pixel = width;
+                    scale_h_pixel = this.height * scale;
+                } else {
+                    scale = scale_h;
+                    scale_w_pixel = this.width * scale;
+                    scale_h_pixel = height;
+                }
+
+                // 拡大の場合で、isUpがfalseであれば何もしない
+                if (!isUp && scale >= 1) {
+                    callback(photo);
+                    return;
+                }
+
+                canvas.width = this.width;
+                canvas.height = this.height;
+                ctx.drawImage(this, 0, 0);
+                that._JSImageResizer(ctx.getImageData(0, 0, this.width, this.height).data, this.width, this.height, scale_w_pixel, scale_h_pixel, function (buffer) {
+                    var tempcanvas = document.createElement('canvas');
+                    tempcanvas.width = scale_w_pixel;
+                    tempcanvas.height = scale_h_pixel;
+                    var tempcontext = tempcanvas.getContext('2d');
+                    that._updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
+
+                    // exifを更新して返す
+                    callback(that._setSize(that.exifObj, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
+                });
             };
             image.src = photo;
+        }
+
+        /**
+         * 指定のデータに、指定の幅と高さを書き込む
+         * @param ExifObject beforeexif 前の画像のexifObject
+         * @param data string、バイナリ共に対応
+         * @param number width 幅
+         * @param number height 高さ
+         * @return 変換後のデータ
+         */
+
+    }, {
+        key: '_setSize',
+        value: function _setSize(beforeexif, data, width, height) {
+            beforeexif['0th'][_piexif2.default.ImageIFD.ImageWidth] = width;
+            beforeexif['0th'][_piexif2.default.ImageIFD.ImageLength] = height;
+            beforeexif['Exif'][_piexif2.default.ExifIFD.PixelXDimension] = width;
+            beforeexif['Exif'][_piexif2.default.ExifIFD.PixelYDimension] = height;
+            var exifStr = _piexif2.default.dump(beforeexif);
+            return _piexif2.default.insert(exifStr, data);
+        }
+
+        /** 縮小、拡大した画像を指定のコンテキストに描画。
+         * resizeから利用。
+         */
+
+    }, {
+        key: '_updateCanvas',
+        value: function _updateCanvas(contextHandlePassed, imageBuffer, frameBuffer) {
+            var data = imageBuffer.data;
+            var length = data.length;
+            for (var x = 0; x < length; ++x) {
+                data[x] = frameBuffer[x] & 0xFF;
+            }
+            contextHandlePassed.putImageData(imageBuffer, 0, 0);
         }
 
         /**
@@ -194,7 +241,7 @@ var PhotoResize = function () {
         key: 'getOrientation',
         value: function getOrientation(exifObj) {
             exifObj = exifObj || this.exifObj;
-            return exifObj['0th']['Orientation'] || 1;
+            return exifObj['0th'][_piexif2.default.ImageIFD.Orientation] || 1;
         }
 
         /**
@@ -220,19 +267,31 @@ var PhotoResize = function () {
 
             return output;
         }
+
+        /**
+         * 渡されたDataURL文字列をバイナリにして返す
+         * @param string data DataURL形式の画像データ
+         * @return base64デコードしたバイナリ。形式が不正な場合はfalseを返す
+         */
+
     }], [{
         key: '_load',
-
-        /** 指定のファイルを読み込む
-         * @param File file 読み込むファイル。fileタグなどで指定されたもの
-         * @param function callback 読み込みが完了したら呼び出すコールバック関数。引数として、読み込んだデータのDataURIを返す
-        */
         value: function _load(file, callback) {
             var reader = new FileReader();
             reader.onload = function (e) {
                 callback(e.target.result);
             };
             reader.readAsDataURL(file);
+        }
+    }, {
+        key: 'convDataURL2Binary',
+        value: function convDataURL2Binary(data) {
+            if (!data.startsWith('data:image/')) {
+                return false;
+            }
+
+            var datas = data.split(',');
+            return window.atob(datas[1]);
         }
     }]);
 
@@ -241,7 +300,7 @@ var PhotoResize = function () {
 
 exports.default = PhotoResize;
 
-},{"./plugins/piexif":2}],2:[function(require,module,exports){
+},{"./plugins/piexif":2,"./plugins/resize":3}],2:[function(require,module,exports){
 "use strict";
 
 /* piexifjs
@@ -2599,5 +2658,450 @@ SOFTWARE.
         window.piexif = that;
     }
 })();
+
+},{}],3:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+exports.Resize = Resize;
+//JavaScript Image Resizer (c) 2012 - Grant Galitz
+var scripts = document.getElementsByTagName("script");
+var sourceOfWorker = scripts[scripts.length - 1].src;
+function Resize(widthOriginal, heightOriginal, targetWidth, targetHeight, blendAlpha, interpolationPass, useWebWorker, resizeCallback) {
+	this.widthOriginal = Math.abs(parseInt(widthOriginal) || 0);
+	this.heightOriginal = Math.abs(parseInt(heightOriginal) || 0);
+	this.targetWidth = Math.abs(parseInt(targetWidth) || 0);
+	this.targetHeight = Math.abs(parseInt(targetHeight) || 0);
+	this.colorChannels = !!blendAlpha ? 4 : 3;
+	this.interpolationPass = !!interpolationPass;
+	this.useWebWorker = !!useWebWorker;
+	this.resizeCallback = typeof resizeCallback == "function" ? resizeCallback : function (returnedArray) {};
+	this.targetWidthMultipliedByChannels = this.targetWidth * this.colorChannels;
+	this.originalWidthMultipliedByChannels = this.widthOriginal * this.colorChannels;
+	this.originalHeightMultipliedByChannels = this.heightOriginal * this.colorChannels;
+	this.widthPassResultSize = this.targetWidthMultipliedByChannels * this.heightOriginal;
+	this.finalResultSize = this.targetWidthMultipliedByChannels * this.targetHeight;
+	this.initialize();
+}
+Resize.prototype.initialize = function () {
+	//Perform some checks:
+	if (this.widthOriginal > 0 && this.heightOriginal > 0 && this.targetWidth > 0 && this.targetHeight > 0) {
+		if (this.useWebWorker) {
+			this.useWebWorker = this.widthOriginal != this.targetWidth || this.heightOriginal != this.targetHeight;
+			if (this.useWebWorker) {
+				this.configureWorker();
+			}
+		}
+		if (!this.useWebWorker) {
+			this.configurePasses();
+		}
+	} else {
+		throw new Error("Invalid settings specified for the resizer.");
+	}
+};
+Resize.prototype.configureWorker = function () {
+	try {
+		var parentObj = this;
+		this.worker = new Worker(sourceOfWorker.substring(0, sourceOfWorker.length - 3) + "Worker.js");
+		this.worker.onmessage = function (event) {
+			parentObj.heightBuffer = event.data;
+			parentObj.resizeCallback(parentObj.heightBuffer);
+		};
+		this.worker.postMessage(["setup", this.widthOriginal, this.heightOriginal, this.targetWidth, this.targetHeight, this.colorChannels, this.interpolationPass]);
+	} catch (error) {
+		this.useWebWorker = false;
+	}
+};
+Resize.prototype.configurePasses = function () {
+	if (this.widthOriginal == this.targetWidth) {
+		//Bypass the width resizer pass:
+		this.resizeWidth = this.bypassResizer;
+	} else {
+		//Setup the width resizer pass:
+		this.ratioWeightWidthPass = this.widthOriginal / this.targetWidth;
+		if (this.ratioWeightWidthPass < 1 && this.interpolationPass) {
+			this.initializeFirstPassBuffers(true);
+			this.resizeWidth = this.colorChannels == 4 ? this.resizeWidthInterpolatedRGBA : this.resizeWidthInterpolatedRGB;
+		} else {
+			this.initializeFirstPassBuffers(false);
+			this.resizeWidth = this.colorChannels == 4 ? this.resizeWidthRGBA : this.resizeWidthRGB;
+		}
+	}
+	if (this.heightOriginal == this.targetHeight) {
+		//Bypass the height resizer pass:
+		this.resizeHeight = this.bypassResizer;
+	} else {
+		//Setup the height resizer pass:
+		this.ratioWeightHeightPass = this.heightOriginal / this.targetHeight;
+		if (this.ratioWeightHeightPass < 1 && this.interpolationPass) {
+			this.initializeSecondPassBuffers(true);
+			this.resizeHeight = this.resizeHeightInterpolated;
+		} else {
+			this.initializeSecondPassBuffers(false);
+			this.resizeHeight = this.colorChannels == 4 ? this.resizeHeightRGBA : this.resizeHeightRGB;
+		}
+	}
+};
+Resize.prototype.resizeWidthRGB = function (buffer) {
+	var ratioWeight = this.ratioWeightWidthPass;
+	var ratioWeightDivisor = 1 / ratioWeight;
+	var weight = 0;
+	var amountToNext = 0;
+	var actualPosition = 0;
+	var currentPosition = 0;
+	var line = 0;
+	var pixelOffset = 0;
+	var outputOffset = 0;
+	var nextLineOffsetOriginalWidth = this.originalWidthMultipliedByChannels - 2;
+	var nextLineOffsetTargetWidth = this.targetWidthMultipliedByChannels - 2;
+	var output = this.outputWidthWorkBench;
+	var outputBuffer = this.widthBuffer;
+	do {
+		for (line = 0; line < this.originalHeightMultipliedByChannels;) {
+			output[line++] = 0;
+			output[line++] = 0;
+			output[line++] = 0;
+		}
+		weight = ratioWeight;
+		do {
+			amountToNext = 1 + actualPosition - currentPosition;
+			if (weight >= amountToNext) {
+				for (line = 0, pixelOffset = actualPosition; line < this.originalHeightMultipliedByChannels; pixelOffset += nextLineOffsetOriginalWidth) {
+					output[line++] += buffer[pixelOffset++] * amountToNext;
+					output[line++] += buffer[pixelOffset++] * amountToNext;
+					output[line++] += buffer[pixelOffset] * amountToNext;
+				}
+				currentPosition = actualPosition = actualPosition + 3;
+				weight -= amountToNext;
+			} else {
+				for (line = 0, pixelOffset = actualPosition; line < this.originalHeightMultipliedByChannels; pixelOffset += nextLineOffsetOriginalWidth) {
+					output[line++] += buffer[pixelOffset++] * weight;
+					output[line++] += buffer[pixelOffset++] * weight;
+					output[line++] += buffer[pixelOffset] * weight;
+				}
+				currentPosition += weight;
+				break;
+			}
+		} while (weight > 0 && actualPosition < this.originalWidthMultipliedByChannels);
+		for (line = 0, pixelOffset = outputOffset; line < this.originalHeightMultipliedByChannels; pixelOffset += nextLineOffsetTargetWidth) {
+			outputBuffer[pixelOffset++] = output[line++] * ratioWeightDivisor;
+			outputBuffer[pixelOffset++] = output[line++] * ratioWeightDivisor;
+			outputBuffer[pixelOffset] = output[line++] * ratioWeightDivisor;
+		}
+		outputOffset += 3;
+	} while (outputOffset < this.targetWidthMultipliedByChannels);
+	return outputBuffer;
+};
+Resize.prototype.resizeWidthInterpolatedRGB = function (buffer) {
+	var ratioWeight = this.ratioWeightWidthPass;
+	var weight = 0;
+	var finalOffset = 0;
+	var pixelOffset = 0;
+	var firstWeight = 0;
+	var secondWeight = 0;
+	var outputBuffer = this.widthBuffer;
+	//Handle for only one interpolation input being valid for start calculation:
+	for (var targetPosition = 0; weight < 1 / 3; targetPosition += 3, weight += ratioWeight) {
+		for (finalOffset = targetPosition, pixelOffset = 0; finalOffset < this.widthPassResultSize; pixelOffset += this.originalWidthMultipliedByChannels, finalOffset += this.targetWidthMultipliedByChannels) {
+			outputBuffer[finalOffset] = buffer[pixelOffset];
+			outputBuffer[finalOffset + 1] = buffer[pixelOffset + 1];
+			outputBuffer[finalOffset + 2] = buffer[pixelOffset + 2];
+		}
+	}
+	//Adjust for overshoot of the last pass's counter:
+	weight -= 1 / 3;
+	for (var interpolationWidthSourceReadStop = this.widthOriginal - 1; weight < interpolationWidthSourceReadStop; targetPosition += 3, weight += ratioWeight) {
+		//Calculate weightings:
+		secondWeight = weight % 1;
+		firstWeight = 1 - secondWeight;
+		//Interpolate:
+		for (finalOffset = targetPosition, pixelOffset = Math.floor(weight) * 3; finalOffset < this.widthPassResultSize; pixelOffset += this.originalWidthMultipliedByChannels, finalOffset += this.targetWidthMultipliedByChannels) {
+			outputBuffer[finalOffset] = buffer[pixelOffset] * firstWeight + buffer[pixelOffset + 3] * secondWeight;
+			outputBuffer[finalOffset + 1] = buffer[pixelOffset + 1] * firstWeight + buffer[pixelOffset + 4] * secondWeight;
+			outputBuffer[finalOffset + 2] = buffer[pixelOffset + 2] * firstWeight + buffer[pixelOffset + 5] * secondWeight;
+		}
+	}
+	//Handle for only one interpolation input being valid for end calculation:
+	for (interpolationWidthSourceReadStop = this.originalWidthMultipliedByChannels - 3; targetPosition < this.targetWidthMultipliedByChannels; targetPosition += 3) {
+		for (finalOffset = targetPosition, pixelOffset = interpolationWidthSourceReadStop; finalOffset < this.widthPassResultSize; pixelOffset += this.originalWidthMultipliedByChannels, finalOffset += this.targetWidthMultipliedByChannels) {
+			outputBuffer[finalOffset] = buffer[pixelOffset];
+			outputBuffer[finalOffset + 1] = buffer[pixelOffset + 1];
+			outputBuffer[finalOffset + 2] = buffer[pixelOffset + 2];
+		}
+	}
+	return outputBuffer;
+};
+Resize.prototype.resizeWidthRGBA = function (buffer) {
+	var ratioWeight = this.ratioWeightWidthPass;
+	var ratioWeightDivisor = 1 / ratioWeight;
+	var weight = 0;
+	var amountToNext = 0;
+	var actualPosition = 0;
+	var currentPosition = 0;
+	var line = 0;
+	var pixelOffset = 0;
+	var outputOffset = 0;
+	var nextLineOffsetOriginalWidth = this.originalWidthMultipliedByChannels - 3;
+	var nextLineOffsetTargetWidth = this.targetWidthMultipliedByChannels - 3;
+	var output = this.outputWidthWorkBench;
+	var outputBuffer = this.widthBuffer;
+	do {
+		for (line = 0; line < this.originalHeightMultipliedByChannels;) {
+			output[line++] = 0;
+			output[line++] = 0;
+			output[line++] = 0;
+			output[line++] = 0;
+		}
+		weight = ratioWeight;
+		do {
+			amountToNext = 1 + actualPosition - currentPosition;
+			if (weight >= amountToNext) {
+				for (line = 0, pixelOffset = actualPosition; line < this.originalHeightMultipliedByChannels; pixelOffset += nextLineOffsetOriginalWidth) {
+					output[line++] += buffer[pixelOffset++] * amountToNext;
+					output[line++] += buffer[pixelOffset++] * amountToNext;
+					output[line++] += buffer[pixelOffset++] * amountToNext;
+					output[line++] += buffer[pixelOffset] * amountToNext;
+				}
+				currentPosition = actualPosition = actualPosition + 4;
+				weight -= amountToNext;
+			} else {
+				for (line = 0, pixelOffset = actualPosition; line < this.originalHeightMultipliedByChannels; pixelOffset += nextLineOffsetOriginalWidth) {
+					output[line++] += buffer[pixelOffset++] * weight;
+					output[line++] += buffer[pixelOffset++] * weight;
+					output[line++] += buffer[pixelOffset++] * weight;
+					output[line++] += buffer[pixelOffset] * weight;
+				}
+				currentPosition += weight;
+				break;
+			}
+		} while (weight > 0 && actualPosition < this.originalWidthMultipliedByChannels);
+		for (line = 0, pixelOffset = outputOffset; line < this.originalHeightMultipliedByChannels; pixelOffset += nextLineOffsetTargetWidth) {
+			outputBuffer[pixelOffset++] = output[line++] * ratioWeightDivisor;
+			outputBuffer[pixelOffset++] = output[line++] * ratioWeightDivisor;
+			outputBuffer[pixelOffset++] = output[line++] * ratioWeightDivisor;
+			outputBuffer[pixelOffset] = output[line++] * ratioWeightDivisor;
+		}
+		outputOffset += 4;
+	} while (outputOffset < this.targetWidthMultipliedByChannels);
+	return outputBuffer;
+};
+Resize.prototype.resizeWidthInterpolatedRGBA = function (buffer) {
+	var ratioWeight = this.ratioWeightWidthPass;
+	var weight = 0;
+	var finalOffset = 0;
+	var pixelOffset = 0;
+	var firstWeight = 0;
+	var secondWeight = 0;
+	var outputBuffer = this.widthBuffer;
+	//Handle for only one interpolation input being valid for start calculation:
+	for (var targetPosition = 0; weight < 1 / 3; targetPosition += 4, weight += ratioWeight) {
+		for (finalOffset = targetPosition, pixelOffset = 0; finalOffset < this.widthPassResultSize; pixelOffset += this.originalWidthMultipliedByChannels, finalOffset += this.targetWidthMultipliedByChannels) {
+			outputBuffer[finalOffset] = buffer[pixelOffset];
+			outputBuffer[finalOffset + 1] = buffer[pixelOffset + 1];
+			outputBuffer[finalOffset + 2] = buffer[pixelOffset + 2];
+			outputBuffer[finalOffset + 3] = buffer[pixelOffset + 3];
+		}
+	}
+	//Adjust for overshoot of the last pass's counter:
+	weight -= 1 / 3;
+	for (var interpolationWidthSourceReadStop = this.widthOriginal - 1; weight < interpolationWidthSourceReadStop; targetPosition += 4, weight += ratioWeight) {
+		//Calculate weightings:
+		secondWeight = weight % 1;
+		firstWeight = 1 - secondWeight;
+		//Interpolate:
+		for (finalOffset = targetPosition, pixelOffset = Math.floor(weight) * 4; finalOffset < this.widthPassResultSize; pixelOffset += this.originalWidthMultipliedByChannels, finalOffset += this.targetWidthMultipliedByChannels) {
+			outputBuffer[finalOffset] = buffer[pixelOffset] * firstWeight + buffer[pixelOffset + 4] * secondWeight;
+			outputBuffer[finalOffset + 1] = buffer[pixelOffset + 1] * firstWeight + buffer[pixelOffset + 5] * secondWeight;
+			outputBuffer[finalOffset + 2] = buffer[pixelOffset + 2] * firstWeight + buffer[pixelOffset + 6] * secondWeight;
+			outputBuffer[finalOffset + 3] = buffer[pixelOffset + 3] * firstWeight + buffer[pixelOffset + 7] * secondWeight;
+		}
+	}
+	//Handle for only one interpolation input being valid for end calculation:
+	for (interpolationWidthSourceReadStop = this.originalWidthMultipliedByChannels - 4; targetPosition < this.targetWidthMultipliedByChannels; targetPosition += 4) {
+		for (finalOffset = targetPosition, pixelOffset = interpolationWidthSourceReadStop; finalOffset < this.widthPassResultSize; pixelOffset += this.originalWidthMultipliedByChannels, finalOffset += this.targetWidthMultipliedByChannels) {
+			outputBuffer[finalOffset] = buffer[pixelOffset];
+			outputBuffer[finalOffset + 1] = buffer[pixelOffset + 1];
+			outputBuffer[finalOffset + 2] = buffer[pixelOffset + 2];
+			outputBuffer[finalOffset + 3] = buffer[pixelOffset + 3];
+		}
+	}
+	return outputBuffer;
+};
+Resize.prototype.resizeHeightRGB = function (buffer) {
+	var ratioWeight = this.ratioWeightHeightPass;
+	var ratioWeightDivisor = 1 / ratioWeight;
+	var weight = 0;
+	var amountToNext = 0;
+	var actualPosition = 0;
+	var currentPosition = 0;
+	var pixelOffset = 0;
+	var outputOffset = 0;
+	var output = this.outputHeightWorkBench;
+	var outputBuffer = this.heightBuffer;
+	do {
+		for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels;) {
+			output[pixelOffset++] = 0;
+			output[pixelOffset++] = 0;
+			output[pixelOffset++] = 0;
+		}
+		weight = ratioWeight;
+		do {
+			amountToNext = 1 + actualPosition - currentPosition;
+			if (weight >= amountToNext) {
+				for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels;) {
+					output[pixelOffset++] += buffer[actualPosition++] * amountToNext;
+					output[pixelOffset++] += buffer[actualPosition++] * amountToNext;
+					output[pixelOffset++] += buffer[actualPosition++] * amountToNext;
+				}
+				currentPosition = actualPosition;
+				weight -= amountToNext;
+			} else {
+				for (pixelOffset = 0, amountToNext = actualPosition; pixelOffset < this.targetWidthMultipliedByChannels;) {
+					output[pixelOffset++] += buffer[amountToNext++] * weight;
+					output[pixelOffset++] += buffer[amountToNext++] * weight;
+					output[pixelOffset++] += buffer[amountToNext++] * weight;
+				}
+				currentPosition += weight;
+				break;
+			}
+		} while (weight > 0 && actualPosition < this.widthPassResultSize);
+		for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels;) {
+			outputBuffer[outputOffset++] = Math.round(output[pixelOffset++] * ratioWeightDivisor);
+			outputBuffer[outputOffset++] = Math.round(output[pixelOffset++] * ratioWeightDivisor);
+			outputBuffer[outputOffset++] = Math.round(output[pixelOffset++] * ratioWeightDivisor);
+		}
+	} while (outputOffset < this.finalResultSize);
+	return outputBuffer;
+};
+Resize.prototype.resizeHeightInterpolated = function (buffer) {
+	var ratioWeight = this.ratioWeightHeightPass;
+	var weight = 0;
+	var finalOffset = 0;
+	var pixelOffset = 0;
+	var pixelOffsetAccumulated = 0;
+	var pixelOffsetAccumulated2 = 0;
+	var firstWeight = 0;
+	var secondWeight = 0;
+	var outputBuffer = this.heightBuffer;
+	//Handle for only one interpolation input being valid for start calculation:
+	for (; weight < 1 / 3; weight += ratioWeight) {
+		for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels;) {
+			outputBuffer[finalOffset++] = Math.round(buffer[pixelOffset++]);
+		}
+	}
+	//Adjust for overshoot of the last pass's counter:
+	weight -= 1 / 3;
+	for (var interpolationHeightSourceReadStop = this.heightOriginal - 1; weight < interpolationHeightSourceReadStop; weight += ratioWeight) {
+		//Calculate weightings:
+		secondWeight = weight % 1;
+		firstWeight = 1 - secondWeight;
+		//Interpolate:
+		pixelOffsetAccumulated = Math.floor(weight) * this.targetWidthMultipliedByChannels;
+		pixelOffsetAccumulated2 = pixelOffsetAccumulated + this.targetWidthMultipliedByChannels;
+		for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels; ++pixelOffset) {
+			outputBuffer[finalOffset++] = Math.round(buffer[pixelOffsetAccumulated++] * firstWeight + buffer[pixelOffsetAccumulated2++] * secondWeight);
+		}
+	}
+	//Handle for only one interpolation input being valid for end calculation:
+	while (finalOffset < this.finalResultSize) {
+		for (pixelOffset = 0, pixelOffsetAccumulated = interpolationHeightSourceReadStop * this.targetWidthMultipliedByChannels; pixelOffset < this.targetWidthMultipliedByChannels; ++pixelOffset) {
+			outputBuffer[finalOffset++] = Math.round(buffer[pixelOffsetAccumulated++]);
+		}
+	}
+	return outputBuffer;
+};
+Resize.prototype.resizeHeightRGBA = function (buffer) {
+	var ratioWeight = this.ratioWeightHeightPass;
+	var ratioWeightDivisor = 1 / ratioWeight;
+	var weight = 0;
+	var amountToNext = 0;
+	var actualPosition = 0;
+	var currentPosition = 0;
+	var pixelOffset = 0;
+	var outputOffset = 0;
+	var output = this.outputHeightWorkBench;
+	var outputBuffer = this.heightBuffer;
+	do {
+		for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels;) {
+			output[pixelOffset++] = 0;
+			output[pixelOffset++] = 0;
+			output[pixelOffset++] = 0;
+			output[pixelOffset++] = 0;
+		}
+		weight = ratioWeight;
+		do {
+			amountToNext = 1 + actualPosition - currentPosition;
+			if (weight >= amountToNext) {
+				for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels;) {
+					output[pixelOffset++] += buffer[actualPosition++] * amountToNext;
+					output[pixelOffset++] += buffer[actualPosition++] * amountToNext;
+					output[pixelOffset++] += buffer[actualPosition++] * amountToNext;
+					output[pixelOffset++] += buffer[actualPosition++] * amountToNext;
+				}
+				currentPosition = actualPosition;
+				weight -= amountToNext;
+			} else {
+				for (pixelOffset = 0, amountToNext = actualPosition; pixelOffset < this.targetWidthMultipliedByChannels;) {
+					output[pixelOffset++] += buffer[amountToNext++] * weight;
+					output[pixelOffset++] += buffer[amountToNext++] * weight;
+					output[pixelOffset++] += buffer[amountToNext++] * weight;
+					output[pixelOffset++] += buffer[amountToNext++] * weight;
+				}
+				currentPosition += weight;
+				break;
+			}
+		} while (weight > 0 && actualPosition < this.widthPassResultSize);
+		for (pixelOffset = 0; pixelOffset < this.targetWidthMultipliedByChannels;) {
+			outputBuffer[outputOffset++] = Math.round(output[pixelOffset++] * ratioWeightDivisor);
+			outputBuffer[outputOffset++] = Math.round(output[pixelOffset++] * ratioWeightDivisor);
+			outputBuffer[outputOffset++] = Math.round(output[pixelOffset++] * ratioWeightDivisor);
+			outputBuffer[outputOffset++] = Math.round(output[pixelOffset++] * ratioWeightDivisor);
+		}
+	} while (outputOffset < this.finalResultSize);
+	return outputBuffer;
+};
+Resize.prototype.resize = function (buffer) {
+	if (this.useWebWorker) {
+		this.worker.postMessage(["resize", buffer]);
+	} else {
+		this.resizeCallback(this.resizeHeight(this.resizeWidth(buffer)));
+	}
+};
+Resize.prototype.bypassResizer = function (buffer) {
+	//Just return the buffer passsed:
+	return buffer;
+};
+Resize.prototype.initializeFirstPassBuffers = function (BILINEARAlgo) {
+	//Initialize the internal width pass buffers:
+	this.widthBuffer = this.generateFloatBuffer(this.widthPassResultSize);
+	if (!BILINEARAlgo) {
+		this.outputWidthWorkBench = this.generateFloatBuffer(this.originalHeightMultipliedByChannels);
+	}
+};
+Resize.prototype.initializeSecondPassBuffers = function (BILINEARAlgo) {
+	//Initialize the internal height pass buffers:
+	this.heightBuffer = this.generateUint8Buffer(this.finalResultSize);
+	if (!BILINEARAlgo) {
+		this.outputHeightWorkBench = this.generateFloatBuffer(this.targetWidthMultipliedByChannels);
+	}
+};
+Resize.prototype.generateFloatBuffer = function (bufferLength) {
+	//Generate a float32 typed array buffer:
+	try {
+		return new Float32Array(bufferLength);
+	} catch (error) {
+		return [];
+	}
+};
+Resize.prototype.generateUint8Buffer = function (bufferLength) {
+	//Generate a uint8 typed array buffer:
+	try {
+		return new Uint8Array(bufferLength);
+	} catch (error) {
+		return [];
+	}
+};
 
 },{}]},{},[1]);

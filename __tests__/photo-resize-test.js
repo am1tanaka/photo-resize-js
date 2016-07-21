@@ -12,13 +12,13 @@ describe('instantiate', function() {
 describe('exif test', function() {
     it('exif load', () => {
         const photoResize = new PhotoResize();
-        const result = photoResize.loadExif(TEST_DATA);
+        const result = photoResize._loadExif(TEST_DATA);
         //console.log(photoResize.exifHTML());
         expect(result).toBeDefined();
     });
     it('get orientation test.', () =>{
         const photoResize = new PhotoResize();
-        const result = photoResize.loadExif(TEST_DATA);
+        const result = photoResize._loadExif(TEST_DATA);
         expect(photoResize.getOrientation()).toBe(1);
 
     });
@@ -90,7 +90,7 @@ describe('resize test3.', () => {
 
 describe('dataURL decode test.', () => {
     it('dataURL decode test.', () => {
-        var data = PhotoResize.convDataURI2Binary(TEST_DATA);
+        var data = PhotoResize.convDataURL2Binary(TEST_DATA);
         expect(data.length).toBe(29006);
     });
 });
@@ -114,7 +114,7 @@ describe('orientation test.', () => {
 
     it('orientation test.', () => {
         // チェック
-        photoResize.loadExif(resizeddata);
+        photoResize._loadExif(resizeddata);
         var size = photoResize.getImageSize();
         expect(size[0]).toBe(120);
         expect(size[1]).toBe(160);

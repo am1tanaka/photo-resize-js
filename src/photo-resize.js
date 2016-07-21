@@ -31,7 +31,7 @@ export default class PhotoResize {
      * @param string data DataURLの文字列
      * 渡されたデータから、EXIFデータを取り出す
      */
-    loadExif(data) {
+    _loadExif(data) {
         this.exifObj = piexif.load(data);
         return this.exifObj;
     }
@@ -83,7 +83,7 @@ export default class PhotoResize {
      * JSImageResizerによる拡大、縮小
      * @param string photo
      */
-    JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
+    _JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
         var resize = new Resize(origw, origh, dstw, dsth, true, true, this.USE_WORKER, callback);
         resize.resize(photo);
     }
@@ -102,7 +102,7 @@ export default class PhotoResize {
     resize(photo, width, height, callback, isUp) {
         var that = this;
         var temp;
-        this.loadExif(photo);
+        this._loadExif(photo);
 
         // フラグ設定
         isUp = isUp || false;
@@ -151,7 +151,7 @@ export default class PhotoResize {
             canvas.width = this.width;
             canvas.height = this.height;
             ctx.drawImage(this, 0, 0);
-            that.JSImageResizer(
+            that._JSImageResizer(
                 ctx.getImageData(0, 0, this.width, this.height).data,
                 this.width, this.height,
                 scale_w_pixel, scale_h_pixel,
@@ -160,10 +160,10 @@ export default class PhotoResize {
                     tempcanvas.width = scale_w_pixel;
                     tempcanvas.height = scale_h_pixel;
                     var tempcontext = tempcanvas.getContext('2d');
-                    that.updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
+                    that._updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
 
                     // exifを更新して返す
-                    callback(that.setSize(that.exifObj, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
+                    callback(that._setSize(that.exifObj, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
                 });
         }
         image.src = photo;
@@ -177,7 +177,7 @@ export default class PhotoResize {
      * @param number height 高さ
      * @return 変換後のデータ
      */
-    setSize(beforeexif, data, width, height) {
+    _setSize(beforeexif, data, width, height) {
         beforeexif['0th'][piexif.ImageIFD.ImageWidth] = width;
         beforeexif['0th'][piexif.ImageIFD.ImageLength] = height;
         beforeexif['Exif'][piexif.ExifIFD.PixelXDimension] = width;
@@ -189,7 +189,7 @@ export default class PhotoResize {
     /** 縮小、拡大した画像を指定のコンテキストに描画。
      * resizeから利用。
      */
-    updateCanvas(contextHandlePassed, imageBuffer, frameBuffer) {
+    _updateCanvas(contextHandlePassed, imageBuffer, frameBuffer) {
         var data = imageBuffer.data;
         var length = data.length;
         for (var x = 0; x < length; ++x) {
@@ -243,7 +243,7 @@ export default class PhotoResize {
      * @param string data DataURL形式の画像データ
      * @return base64デコードしたバイナリ。形式が不正な場合はfalseを返す
      */
-    static convDataURI2Binary(data) {
+    static convDataURL2Binary(data) {
         if (!data.startsWith('data:image/'))
         {
             return false;
