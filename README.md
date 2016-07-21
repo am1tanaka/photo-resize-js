@@ -11,13 +11,53 @@
 - サイズが小さい時に拡大しないフラグ
 
 # 使い方
-- public/scripts/photo-resize.js を利用したいプロジェクトにコピー
-- 以下のようにクラスをインポート
+- public/scripts/photo-resize.min.js をダウンロード
+- [hMatoba piexifjs](https://github.com/hMatoba/piexifjs)から、piexif.jsをダウンロード
+- [Grant Galitz. JS-Image-Resizer](https://github.com/taisel/JS-Image-Resizer)から、resize.jsとresizeWorker.jsをダウンロード
+- 利用するのをindex.htmlファイルとすると、以下のように配置
 ```
-import PhotoResize from './photo-resize';
+project
+|- index.html
+|- plugins-piexif.js
+|       |- resize.js
+|       |- resizeWorker.js
+|       |- resize.js
+|
+|- scripts-photo-resize.min.js
 ```
-- PhotoResizeをnewする
-- PhotoResizeのインスタンスからresize()を呼び出す。変換後、コールバックが呼び出されるのでそこに続きの処理を書く
+- index.htmlの簡単な例
+```
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Photo Resize Sample</title>
+</head>
+<body>
+<h1>Photo Resize Sample</h1>
+  <input type="file" name="file-photo" id="file-photo">
+  <div>
+    <textarea id="result" cols="100" rows="5"></textarea>
+  </div>
+  <img src="" id="image-div" alt="変換後">
+  
+  <script type="text/javascript" src="plugins/piexif.js"></script>
+  <script type="text/javascript" src="plugins/resize.js"></script>
+  <script type="text/javascript" src="scripts/photo-resize.min.js"></script>
+  <script>
+    function handleDone(data) {
+      document.getElementById('result').innerText = data;
+      document.getElementById('image-div').src=data;
+    }
+    function convDataURI(evt) {
+      var photoResize = new PhotoResize();
+      photoResize.loadAndResize(evt.target.files[0], 640,480, handleDone, false);
+    }
+    document.getElementById('file-photo').addEventListener('change', convDataURI, false);
+  </script>
+</body>
+</html>
+```
 
 
 # 提供メソッド
