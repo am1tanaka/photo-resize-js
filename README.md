@@ -1,7 +1,9 @@
 # photo-resize-js
 写真画像をクライアントサイドでリサイズして、アップロードできるようにするJavaScriptライブラリ。
+[MIT Licence](https://github.com/am1tanaka/photo-resize-js/blob/master/LICENSE)です。
 
-- 画像の拡大、縮小には[taisel JS-Image-Resizer](https://github.com/taisel/JS-Image-Resizer)を利用
+また、以下の2つのプログラムを利用しています。
+- 画像の拡大、縮小には[taisel JS-Image-Resizer](https://github.com/taisel/JS-Image-Resizer)
 - Exifの読み書きは[hMatoba piexifjs](https://github.com/hMatoba/piexifjs)
 
 # 機能
@@ -145,9 +147,10 @@ project
 - https://github.com/taisel/JS-Image-Resizer
   - ライセンス：パブリックドメイン
 
-
-
 # 参考URL
 - http://mae.chab.in/archives/2849
 - http://qiita.com/geek_duck/items/2db28daa9e27df9b861d
 - https://gist.github.com/Fishrock123/8ea81dad3197c2f84366
+
+# ライセンス
+- [MIT Licence](https://github.com/am1tanaka/photo-resize-js/blob/master/LICENSE)
