@@ -62,8 +62,8 @@ project
 ```
 
 
-# 提供メソッド
-## 公開メソッド
+# メソッド
+## 提供メソッド
 - コンストラクタ
   - 利用前に生成する
 - getImageSize([exifObject])
@@ -118,9 +118,7 @@ project
     - 変換したバイナリデータ
 
   
-## ユーティリティメソッド
-- load(File)
-  - 指定のファイルから画像を読み込んで、Data URI Schemaの形式(data:image/jpeg;base64,・・・)で返す
+## 内部利用メソッド
 - _JSImageResizer(photo, origw, origh, dstw, dsth, callback)
   - JSImageResizerのセットアップを呼び出して、resizeを実行する関数。resize()から呼び出す。
 - _setSize(beforeexif, data, width, heigth)
@@ -141,16 +139,22 @@ project
   - 戻り値
     - なし
 
-# 利用ライブラリ
+# 利用ライブラリのライセンス
 - https://github.com/hMatoba/piexifjs
   - ライセンス：[MIT License](https://github.com/hMatoba/piexifjs/blob/master/LICENSE.txt)
 - https://github.com/taisel/JS-Image-Resizer
   - ライセンス：パブリックドメイン
 
-# 参考URL
-- http://mae.chab.in/archives/2849
-- http://qiita.com/geek_duck/items/2db28daa9e27df9b861d
-- https://gist.github.com/Fishrock123/8ea81dad3197c2f84366
 
-# ライセンス
+# 本プログラムのライセンス
 - [MIT Licence](https://github.com/am1tanaka/photo-resize-js/blob/master/LICENSE)
+
+
+# 参考URL
+- [mae's blog. ES6 (ES2015) ModulesのUMD化。HTMLのScript要素とES6 importでの同時読み込みに対応させる方法](http://mae.chab.in/archives/2849)
+- [masahito ohtsuka. HTML5 Canvasで画像のリサイズするならコレ！「JS-Image-Resizer」](http://kinsentansa.blogspot.jp/2013/07/html5-canvasjs-image-resizer.html)
+  - JS Image Resizerの参考
+- [Jeremiah Senkpiel. gulp.js](https://gist.github.com/Fishrock123/8ea81dad3197c2f84366)
+  - gulpでのuglifyのビルド設定を参考にしました
+- [duck geek. クライアント側でcanvasを使って画像をリサイズする](http://qiita.com/geek_duck/items/2db28daa9e27df9b861d)
+  - JS-Image-Resizerに差し替えたので利用せず。そのうちまた利用するかも
