@@ -1,15 +1,15 @@
 var config = {
     srcFolder: 'src',
     srcFile: 'photo-resize.js',
-//    srcFile: 'Foo.js',
     dstFolder: 'public/scripts',
-    dstFile: 'photo-resize.js'
-//    dstFile: 'Foo.js',
+    dstFile: 'photo-resize.js',
+    minFile: 'photo-resize.min.js',
 };
 
 var gulp = require('gulp');
 var browserify = require('browserify');
 var babelify = require('babelify');
+var buffer = require('vinyl-buffer');
 var watchify = require('watchify');
 var source = require('vinyl-source-stream');
 var browserSync = require('browser-sync').create();
@@ -31,7 +31,13 @@ function rebundle() {
         .bundle()
         .on('error', $.util.log.bind($.util, 'Browserify Error'))
         .pipe( source( config.dstFile ))
+        .pipe( buffer())
         .pipe( gulp.dest( config.dstFolder ) )
+        .pipe( $.rename( config.minFile ))
+        .pipe( $.sourcemaps.init({ loadMaps: true}))
+            .pipe( $.uglify() )
+        .pipe( $.sourcemaps.write('.'))
+        .pipe( gulp.dest( config.dstFolder ))
         .on('end', function() {
             browserSync.reload();
         });

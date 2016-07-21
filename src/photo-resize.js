@@ -87,7 +87,6 @@ class PhotoResize {
     _JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
         var resize = new Resize(origw, origh, dstw, dsth, true, true, this.USE_WORKER, callback);
         resize.resize(photo);
-        alert("call resize done.");
     }
 
     /**
