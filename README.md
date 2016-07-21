@@ -102,9 +102,10 @@ import PhotoResize from './photo-resize';
 # 利用ライブラリ
 - https://github.com/hMatoba/piexifjs
 - https://github.com/taisel/JS-Image-Resizer
-- http://mae.chab.in/archives/2849
 
 
 
 # 参考URL
+- http://mae.chab.in/archives/2849
 - http://qiita.com/geek_duck/items/2db28daa9e27df9b861d
+- https://gist.github.com/Fishrock123/8ea81dad3197c2f84366
