@@ -103,33 +103,6 @@ import PhotoResize from './photo-resize';
 - https://github.com/hMatoba/piexifjs
 - https://github.com/taisel/JS-Image-Resizer
 
-## JS-Image-Resizerのメモ
-- Workerを使う場合も、resize.jsを利用する
-
-
-
-- resizeWorker.jsを以下のようにして読み込む
-```
-var worker = new Worker('./plugins/resizeWorker.js');
-```
-- resizeWorkerは、setupとresizeの2回のパスで動作する。配列に引数を設定してそれぞれ呼び出す
-```
-// setup呼び出し
-// thisにイメージデータ、this.widthに元の幅、this.heightに元の高さ、dstWidthに変更後の幅、dstHeightに変更後の高さが設定されているものとする
-// [0]=元の幅
-// [1]=元の高さ
-// [2]=変更後の幅
-// [3]=変更後の高さ
-// [4]=色のバイト数。アルファチャンネルがあれば4。なければ3を指定
-// [5]=interpolationPassを使う場合true
-worker.process([
-    'setup',
-    this.width, this.height,
-
-
-]);
-```
-function Resize(widthOriginal, heightOriginal, targetWidth, targetHeight, colorChannels, interpolationPass) {
 
 # 参考URL
 - http://qiita.com/geek_duck/items/2db28daa9e27df9b861d
