@@ -5,12 +5,20 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * 写真を指定サイズに縮小、あるいは拡大して、DataURIで返すクラス
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * 利用先で import PhotoResize from '../src/photo-resize' などで読み込む
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * @copyright 2016 YuTanaka@AmuseOne
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      * @license MIT
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      */
+var _createClass = function () {
+    function defineProperties(target, props) {
+        for (var i = 0; i < props.length; i++) {
+            var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ("value" in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+        }
+    }return function (Constructor, protoProps, staticProps) {
+        if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+    };
+}(); /**
+      * 写真を指定サイズに縮小、あるいは拡大して、DataURIで返すクラス
+      * 利用先で import PhotoResize from '../src/photo-resize' などで読み込む
+      * @copyright 2016 YuTanaka@AmuseOne
+      * @license MIT
+      */
 
 var _piexif = require('./plugins/piexif');
 
@@ -18,9 +26,15 @@ var _piexif2 = _interopRequireDefault(_piexif);
 
 var _resize = require('./plugins/resize');
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : { default: obj };
+}
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+        throw new TypeError("Cannot call a class as a function");
+    }
+}
 
 var PhotoResize = function () {
     function PhotoResize() {
@@ -35,16 +49,14 @@ var PhotoResize = function () {
      * @param function callback 読み込みが完了したら呼び出すコールバック関数。引数として、読み込んだデータのDataURIを返す
     */
 
-
     _createClass(PhotoResize, [{
-        key: '_loadExif',
-
+        key: 'loadExif',
 
         /**
          * @param string data DataURLの文字列
          * 渡されたデータから、EXIFデータを取り出す
          */
-        value: function _loadExif(data) {
+        value: function loadExif(data) {
             this.exifObj = _piexif2.default.load(data);
             return this.exifObj;
         }
@@ -102,8 +114,8 @@ var PhotoResize = function () {
          */
 
     }, {
-        key: '_JSImageResizer',
-        value: function _JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
+        key: 'JSImageResizer',
+        value: function JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
             var resize = new _resize.Resize(origw, origh, dstw, dsth, true, true, this.USE_WORKER, callback);
             resize.resize(photo);
         }
@@ -125,7 +137,7 @@ var PhotoResize = function () {
         value: function resize(photo, width, height, callback, isUp) {
             var that = this;
             var temp;
-            this._loadExif(photo);
+            this.loadExif(photo);
 
             // フラグ設定
             isUp = isUp || false;
@@ -173,15 +185,15 @@ var PhotoResize = function () {
                 canvas.width = this.width;
                 canvas.height = this.height;
                 ctx.drawImage(this, 0, 0);
-                that._JSImageResizer(ctx.getImageData(0, 0, this.width, this.height).data, this.width, this.height, scale_w_pixel, scale_h_pixel, function (buffer) {
+                that.JSImageResizer(ctx.getImageData(0, 0, this.width, this.height).data, this.width, this.height, scale_w_pixel, scale_h_pixel, function (buffer) {
                     var tempcanvas = document.createElement('canvas');
                     tempcanvas.width = scale_w_pixel;
                     tempcanvas.height = scale_h_pixel;
                     var tempcontext = tempcanvas.getContext('2d');
-                    that._updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
+                    that.updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
 
                     // exifを更新して返す
-                    callback(that._setSize(that.exifObj, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
+                    callback(that.setSize(that.exifObj, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
                 });
             };
             image.src = photo;
@@ -197,8 +209,8 @@ var PhotoResize = function () {
          */
 
     }, {
-        key: '_setSize',
-        value: function _setSize(beforeexif, data, width, height) {
+        key: 'setSize',
+        value: function setSize(beforeexif, data, width, height) {
             beforeexif['0th'][_piexif2.default.ImageIFD.ImageWidth] = width;
             beforeexif['0th'][_piexif2.default.ImageIFD.ImageLength] = height;
             beforeexif['Exif'][_piexif2.default.ExifIFD.PixelXDimension] = width;
@@ -212,8 +224,8 @@ var PhotoResize = function () {
          */
 
     }, {
-        key: '_updateCanvas',
-        value: function _updateCanvas(contextHandlePassed, imageBuffer, frameBuffer) {
+        key: 'updateCanvas',
+        value: function updateCanvas(contextHandlePassed, imageBuffer, frameBuffer) {
             var data = imageBuffer.data;
             var length = data.length;
             for (var x = 0; x < length; ++x) {
@@ -284,8 +296,8 @@ var PhotoResize = function () {
             reader.readAsDataURL(file);
         }
     }, {
-        key: 'convDataURL2Binary',
-        value: function convDataURL2Binary(data) {
+        key: 'convDataURI2Binary',
+        value: function convDataURI2Binary(data) {
             if (!data.startsWith('data:image/')) {
                 return false;
             }
