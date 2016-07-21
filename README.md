@@ -1,5 +1,5 @@
 # photo-resize-js
-写真画像をクライアントサイドでリサイズして、アップロードできるようにするJavaScriptライブラリ。
+写真画像をクライアントサイドでリサイズするJavaScriptライブラリ。
 [MIT Licence](https://github.com/am1tanaka/photo-resize-js/blob/master/LICENSE)です。
 
 また、以下の2つのプログラムを利用しています。
