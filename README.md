@@ -10,6 +10,16 @@
 - サムネイルを作成し直す
 - サイズが小さい時に拡大しないフラグ
 
+# 使い方
+- public/scripts/photo-resize.js を利用したいプロジェクトにコピー
+- 以下のようにクラスをインポート
+```
+import PhotoResize from './photo-resize';
+```
+- PhotoResizeをnewする
+- PhotoResizeのインスタンスからresize()を呼び出す。変換後、コールバックが呼び出されるのでそこに続きの処理を書く
+
+
 # 提供メソッド
 ## 公開メソッド
 - コンストラクタ
