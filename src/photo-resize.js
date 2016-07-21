@@ -98,6 +98,7 @@ export default class PhotoResize {
      */
     resize(photo, width, height, callback, isUp) {
         var that = this;
+        var beforeExif = piexif.load(photo);
         isUp = isUp || false;
 
         // 処理する
@@ -147,10 +148,29 @@ export default class PhotoResize {
                     tempcanvas.height = scale_h_pixel;
                     var tempcontext = tempcanvas.getContext('2d');
                     that.updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
-                    callback(tempcanvas.toDataURL('image/jpeg'));
+
+                    // exifを更新して返す
+                    callback(that.setSize(beforeExif, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
                 });
         }
         image.src = photo;
+    }
+
+    /**
+     * 指定のデータに、指定の幅と高さを書き込む
+     * @param ExifObject beforeexif 前の画像のexifObject
+     * @param data string、バイナリ共に対応
+     * @param number width 幅
+     * @param number height 高さ
+     * @return 変換後のデータ
+     */
+    setSize(beforeexif, data, width, height) {
+        beforeexif['0th'][piexif.ImageIFD.ImageWidth] = width;
+        beforeexif['0th'][piexif.ImageIFD.ImageLength] = height;
+        beforeexif['Exif'][piexif.ExifIFD.PixelXDimension] = width;
+        beforeexif['Exif'][piexif.ExifIFD.PixelYDimension] = height;
+        var exifStr = piexif.dump(beforeexif);
+        return piexif.insert(exifStr, data);
     }
 
     /** 縮小、拡大した画像を指定のコンテキストに描画。
