@@ -101,7 +101,9 @@ import PhotoResize from './photo-resize';
 
 # 利用ライブラリ
 - https://github.com/hMatoba/piexifjs
+  - ライセンス：[MIT License](https://github.com/hMatoba/piexifjs/blob/master/LICENSE.txt)
 - https://github.com/taisel/JS-Image-Resizer
+  - ライセンス：パブリックドメイン
 
 
 
