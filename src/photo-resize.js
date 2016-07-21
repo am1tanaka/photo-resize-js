@@ -10,9 +10,9 @@ import {Resize} from './plugins/resize';
 
 class PhotoResize {
 
-    constructor() {
-        // Workerを利用するかのフラグ。現時点では動いていないのでfalseにしておく
-        this.USER_WORKER = false;
+    constructor(worker) {
+        // Workerを利用するかのフラグ
+        this.USE_WORKER = worker || true;
     }
 
     /** 指定のファイルを読み込む
@@ -87,6 +87,7 @@ class PhotoResize {
     _JSImageResizer(photo, origw, origh, dstw, dsth, callback) {
         var resize = new Resize(origw, origh, dstw, dsth, true, true, this.USE_WORKER, callback);
         resize.resize(photo);
+        alert("call resize done.");
     }
 
     /**
