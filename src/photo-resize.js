@@ -45,20 +45,23 @@ export default class PhotoResize {
     getImageSize(exifObj) {
         var ret = [0,0];
         exifObj = exifObj || this.exifObj;
-        if (exifObj['0th']['ImageWidth'] && exifObj['0th']['ImageLength']) {
-            ret[0] = exifObj['0th']['ImageWidth'];
-            ret[1] = exifObj['0th']['ImageLength'];
+
+        try {
+            ret[0] = exifObj['0th'][piexif.ImageIFD.ImageWidth];
+            ret[1] = exifObj['0th'][piexif.ImageIFD.ImageLength];
         }
-        else if (exifObj['Exif'][piexif.ExifIFD.PixelXDimension] && exifObj['Exif'][piexif.ExifIFD.PixelYDimension]) {
-            ret[0] = exifObj['Exif'][piexif.ExifIFD.PixelXDimension];
-            ret[1] = exifObj['Exif'][piexif.ExifIFD.PixelYDimension];
+        catch (e) {
+            try {
+                ret[0] = exifObj['Exif'][piexif.ExifIFD.PixelXDimension];
+                ret[1] = exifObj['Exif'][piexif.ExifIFD.PixelYDimension];
+            }
+            catch (ee) {
+                return false;
+            }
         }
-        else {
-            // 幅も高さも無効だったので何もしない
-            return false;
-        }
+
         // 反転チェック
-        if (this.isSwapSide()) {
+        if (this.isSwapSide(exifObj)) {
             var temp = ret[0];
             ret[0] = ret[1];
             ret[1] = temp;
@@ -98,8 +101,18 @@ export default class PhotoResize {
      */
     resize(photo, width, height, callback, isUp) {
         var that = this;
-        var beforeExif = piexif.load(photo);
+        var temp;
+        this.loadExif(photo);
+
+        // フラグ設定
         isUp = isUp || false;
+
+        // 画像の縦横が異なる時、拡大、縮小先のx,yを入れ替える
+        if (this.isSwapSide()) {
+            temp = width;
+            width = height;
+            height = temp;
+        }
 
         // 処理する
         var canvas = document.createElement('canvas');
@@ -150,7 +163,7 @@ export default class PhotoResize {
                     that.updateCanvas(tempcontext, tempcontext.createImageData(scale_w_pixel, scale_h_pixel), buffer);
 
                     // exifを更新して返す
-                    callback(that.setSize(beforeExif, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
+                    callback(that.setSize(that.exifObj, tempcanvas.toDataURL('image/jpeg'), scale_w_pixel, scale_h_pixel));
                 });
         }
         image.src = photo;
@@ -201,7 +214,7 @@ export default class PhotoResize {
      */
     getOrientation(exifObj) {
         exifObj = exifObj || this.exifObj;
-        return exifObj['0th']['Orientation'] || 1;
+        return exifObj['0th'][piexif.ImageIFD.Orientation] || 1;
     }
 
     /**
@@ -223,5 +236,20 @@ export default class PhotoResize {
         }
 
         return output;
+    }
+
+    /**
+     * 渡されたDataURL文字列をバイナリにして返す
+     * @param string data DataURL形式の画像データ
+     * @return base64デコードしたバイナリ。形式が不正な場合はfalseを返す
+     */
+    static convDataURI2Binary(data) {
+        if (!data.startsWith('data:image/'))
+        {
+            return false;
+        }
+
+        var datas = data.split(',');
+        return window.atob(datas[1]);
     }
 }

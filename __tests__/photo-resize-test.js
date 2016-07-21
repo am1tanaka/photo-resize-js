@@ -22,13 +22,6 @@ describe('exif test', function() {
         expect(photoResize.getOrientation()).toBe(1);
 
     });
-    it('get image size.', () =>{
-        const photoResize = new PhotoResize();
-        photoResize.loadExif(TEST_DATA);
-        const result = photoResize.getImageSize();
-        expect(result[0]).toBe(320);
-        expect(result[1]).toBe(240);
-    });
 });
 
 describe('resize test.', () => {
@@ -52,13 +45,6 @@ describe('resize test.', () => {
         expect(exif['Exif'][piexif.ExifIFD.PixelYDimension]).toBe(150);
     });
 });
-
-function dispSize (prefix, data) {
-    var exifObj = piexif.load(data);
-    console.log("----"+prefix);
-    console.log("imagesize="+exifObj['0th'][piexif.ImageIFD.ImageWidth]+","+exifObj['0th'][piexif.ImageIFD.ImageLength]);
-    console.log("exifsize="+exifObj['Exif'][piexif.ExifIFD.PixelXDimension]+","+exifObj['Exif'][piexif.ExifIFD.PixelYDimension]);
-}
 
 describe('resize test2.', () => {
     var resizeddata = "";
@@ -102,10 +88,42 @@ describe('resize test3.', () => {
     });
 });
 
-describe('exif test.', () => {
-
+describe('dataURL decode test.', () => {
+    it('dataURL decode test.', () => {
+        var data = PhotoResize.convDataURI2Binary(TEST_DATA);
+        expect(data.length).toBe(29006);
+    });
 });
 
-describe('rotation test.', () => {
+describe('orientation test.', () => {
+    var resizeddata = "";
+    const photoResize = new PhotoResize();
+    beforeEach((done) => {
+        // 右に90度回転
+        var exif = piexif.load(TEST_DATA);
+        exif['0th'][piexif.ImageIFD.Orientation] = 6;
+        var exifStr = piexif.dump(exif);
+        var changed = piexif.insert(exifStr, TEST_DATA);
 
+        var callback = (data) => {
+            resizeddata = data;
+            done();
+        }
+        photoResize.resize(changed, 200, 160, callback, true);
+    });
+
+    it('orientation test.', () => {
+        // チェック
+        photoResize.loadExif(resizeddata);
+        var size = photoResize.getImageSize();
+        expect(size[0]).toBe(120);
+        expect(size[1]).toBe(160);
+    });
 });
+
+function dispSize (prefix, data) {
+    var exifObj = piexif.load(data);
+    console.log("----"+prefix);
+    console.log("imagesize="+exifObj['0th'][piexif.ImageIFD.ImageWidth]+","+exifObj['0th'][piexif.ImageIFD.ImageLength]);
+    console.log("exifsize="+exifObj['Exif'][piexif.ExifIFD.PixelXDimension]+","+exifObj['Exif'][piexif.ExifIFD.PixelYDimension]);
+}
