@@ -1,8 +1,10 @@
 var config = {
     srcFolder: 'src',
     srcFile: 'photo-resize.js',
+//    srcFile: 'Foo.js',
     dstFolder: 'public/scripts',
     dstFile: 'photo-resize.js'
+//    dstFile: 'Foo.js',
 };
 
 var gulp = require('gulp');

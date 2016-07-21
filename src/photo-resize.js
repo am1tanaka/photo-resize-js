@@ -8,7 +8,7 @@
 import piexif from './plugins/piexif';
 import {Resize} from './plugins/resize';
 
-export default class PhotoResize {
+class PhotoResize {
 
     constructor() {
         // Workerを利用するかのフラグ。現時点では動いていないのでfalseにしておく
@@ -19,10 +19,11 @@ export default class PhotoResize {
      * @param File file 読み込むファイル。fileタグなどで指定されたもの
      * @param function callback 読み込みが完了したら呼び出すコールバック関数。引数として、読み込んだデータのDataURIを返す
     */
-    static _load(file, callback) {
+    loadAndResize(file, width, height, callback, isUp) {
+        var that = this;
         const reader = new FileReader();
         reader.onload = (e) => {
-            callback(e.target.result);
+            that.resize(e.target.result, width, height, callback, isUp);
         };
         reader.readAsDataURL(file);
     }
@@ -252,4 +253,9 @@ export default class PhotoResize {
         var datas = data.split(',');
         return window.atob(datas[1]);
     }
+}
+
+export default PhotoResize;
+if (typeof window != "undefined"){
+    !window.PhotoResize && (window.PhotoResize = PhotoResize);
 }

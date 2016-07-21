@@ -6,6 +6,26 @@
 </head>
 <body>
 <h1>Photo Resize Sample</h1>
+
+    <input type="file" name="file-photo" id="file-photo">
+    <div>
+        <textarea id="result" cols="100" rows="5"></textarea>
+    </div>
+    <img src="" id="image-div" alt="変換後">
 <script src="scripts/photo-resize.js"></script>
+<script>
+
+function handleDone(data) {
+    document.getElementById('result').innerText = data;
+    document.getElementById('image-div').src=data;
+}
+function convDataURI(evt) {
+    var photoResize = new PhotoResize();
+    photoResize.loadAndResize(evt.target.files[0], 640,480, handleDone, false);
+
+}
+document.getElementById('file-photo').addEventListener('change', convDataURI, false);
+
+</script>
 </body>
 </html>
