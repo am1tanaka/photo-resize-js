@@ -1,23 +1,22 @@
-import PhotoResize from '../src/photo-resize';
 import TEST_DATA from '../testdatas/testdata';
-import piexif from '../src/plugins/piexif';
+var USE_WORKER = false;
 
 describe('instantiate', function() {
     it('photo-resize instantiate', () => {
-        const photoResize = new PhotoResize();
+        const photoResize = new PhotoResize(USE_WORKER);
         expect(photoResize).toBeDefined();
     });
 });
 
 describe('exif test', function() {
     it('exif load', () => {
-        const photoResize = new PhotoResize();
+        const photoResize = new PhotoResize(USE_WORKER);
         const result = photoResize._loadExif(TEST_DATA);
         //console.log(photoResize.exifHTML());
         expect(result).toBeDefined();
     });
     it('get orientation test.', () =>{
-        const photoResize = new PhotoResize();
+        const photoResize = new PhotoResize(USE_WORKER);
         const result = photoResize._loadExif(TEST_DATA);
         expect(photoResize.getOrientation()).toBe(1);
 
@@ -26,8 +25,9 @@ describe('exif test', function() {
 
 describe('resize test.', () => {
     var resizeddata = "";
-    const photoResize = new PhotoResize();
+    var photoResize;
     beforeEach((done) => {
+        photoResize = new PhotoResize(USE_WORKER);
         var callback = (data) => {
             resizeddata = data;
             done();
@@ -48,8 +48,9 @@ describe('resize test.', () => {
 
 describe('resize test2.', () => {
     var resizeddata = "";
-    const photoResize = new PhotoResize();
+    var photoResize;
     beforeEach((done) => {
+        photoResize = new PhotoResize(USE_WORKER);
         var callback = (data) => {
             resizeddata = data;
             done();
@@ -68,8 +69,9 @@ describe('resize test2.', () => {
 
 describe('resize test3.', () => {
     var resizeddata = "";
-    const photoResize = new PhotoResize();
+    var photoResize;
     beforeEach((done) => {
+        photoResize = new PhotoResize(USE_WORKER);
         var callback = (data) => {
             resizeddata = data;
             done();
@@ -97,8 +99,9 @@ describe('dataURL decode test.', () => {
 
 describe('orientation test.', () => {
     var resizeddata = "";
-    const photoResize = new PhotoResize();
+    var photoResize;
     beforeEach((done) => {
+        photoResize = new PhotoResize(USE_WORKER);
         // 右に90度回転
         var exif = piexif.load(TEST_DATA);
         exif['0th'][piexif.ImageIFD.Orientation] = 6;

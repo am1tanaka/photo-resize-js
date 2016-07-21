@@ -5,14 +5,11 @@
  * @license MIT
  */
 
-import piexif from './plugins/piexif';
-import {Resize} from './plugins/resize';
-
 class PhotoResize {
 
     constructor(worker) {
         // Workerを利用するかのフラグ
-        this.USE_WORKER = worker || true;
+        this.USE_WORKER = typeof worker === "undefined" ? true : worker;
     }
 
     /** 指定のファイルを読み込む

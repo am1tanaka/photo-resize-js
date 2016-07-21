@@ -15,19 +15,21 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      '__tests__/**/*-test.js'
+        '__tests__/**/*-test.js',
+        'public/plugins/**/*.js',
+        'public/scripts/**/*.js',
     ],
 
 
     // list of files to exclude
     exclude: [
+        'public/plugins/resizeWorker.js',
     ],
-
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-        '__tests__/**/*-test.js': ['browserify']
+        '__tests__/**/*-test.js': ['browserify'],
     },
 
     browserify: {
@@ -38,7 +40,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['progress'],
+    reporters: ['spec'],
 
 
     // web server port

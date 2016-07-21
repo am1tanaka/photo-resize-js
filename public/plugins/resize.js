@@ -1,9 +1,7 @@
 //JavaScript Image Resizer (c) 2012 - Grant Galitz
 var scripts = document.getElementsByTagName("script");
-var paths = scripts[scripts.length-1].src.split("/");
-paths.pop();
-var sourceOfWorker = paths.join("/")+"/resize.js";
-export function Resize(widthOriginal, heightOriginal, targetWidth, targetHeight, blendAlpha, interpolationPass, useWebWorker, resizeCallback) {
+var sourceOfWorker = scripts[scripts.length-1].src;
+function Resize(widthOriginal, heightOriginal, targetWidth, targetHeight, blendAlpha, interpolationPass, useWebWorker, resizeCallback) {
 	this.widthOriginal = Math.abs(parseInt(widthOriginal) || 0);
 	this.heightOriginal = Math.abs(parseInt(heightOriginal) || 0);
 	this.targetWidth = Math.abs(parseInt(targetWidth) || 0);
@@ -71,7 +69,7 @@ Resize.prototype.configurePasses = function () {
 		//Bypass the height resizer pass:
 		this.resizeHeight = this.bypassResizer;
 	}
-	else {
+	else {	
 		//Setup the height resizer pass:
 		this.ratioWeightHeightPass = this.heightOriginal / this.targetHeight;
 		if (this.ratioWeightHeightPass < 1 && this.interpolationPass) {
