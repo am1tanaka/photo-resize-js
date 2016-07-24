@@ -239,7 +239,7 @@ class PhotoResize {
     /**
      * 渡されたDataURL文字列をバイナリにして返す
      * @param string data DataURL形式の画像データ
-     * @return base64デコードしたバイナリ。形式が不正な場合はfalseを返す
+     * @return base64デコードしたバイナリをUint8Arrayにして返す。形式が不正な場合はfalseを返す
      */
     static convDataURL2Binary(data) {
         if (!data.startsWith('data:image/'))
@@ -247,8 +247,31 @@ class PhotoResize {
             return false;
         }
 
-        var datas = data.split(',');
-        return window.atob(datas[1]);
+        var trim = data.replace(/^.*?,/,'');
+        var binarray = PhotoResize._base64_decode(trim);
+        var uint8 = new Uint8Array(binarray.length);
+        uint8.set(binarray);
+        return uint8;
+    }
+
+    /**
+     * 与えられた文字列をバイナリにデコードする
+     * @url http://qiita.com/weal/items/1a2af81138cd8f49937d
+     */
+    static _base64_decode(str) {
+        var i, j, len, arr, buf, tbl;
+        if (!str || !str.length) {return [];}
+        for(i=0,tbl={61:64,47:63,43:62}; i<62; i++) {tbl[i<26?i+65:(i<52?i+71:i-4)]=i;} //A-Za-z0-9+/=
+        for(i=0,len=str.length,arr=[],buf=[]; i<len; i+=4) { //6,2+4,4+2,6
+            for(j=0; j<4; j++) {buf[j] = tbl[str.charCodeAt(i+j)||0];}
+            arr.push(
+                buf[0]<<2|(buf[1]&63)>>>4,
+                (buf[1]&15)<<4|(buf[2]&63)>>>2,
+                (buf[2]&3)<<6|buf[3]&63
+            );
+        }
+        if (buf[3]===64) {arr.pop();if (buf[2]===64) {arr.pop();}}
+        return arr;
     }
 }
 
