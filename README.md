@@ -115,7 +115,7 @@ project
   - 引数
     - data DataURL文字列
   - 戻り値
-    - 変換したバイナリデータ
+    - 変換したバイナリデータをUint8Array形式で返す
 
   
 ## 内部利用メソッド
@@ -138,6 +138,12 @@ project
     - frameBuffer 変換後のデータ
   - 戻り値
     - なし
+- _base64_decode(str)
+  - [@weal javascriptでBase64](http://qiita.com/weal/items/1a2af81138cd8f49937d)からコピー
+  - 引数
+    - str デコードしたいbase64文字列
+  - 戻り値
+    - デコードしたデータを配列に入れて返す
 
 # 利用ライブラリのライセンス
 - https://github.com/hMatoba/piexifjs
